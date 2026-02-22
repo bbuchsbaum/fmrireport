@@ -1,0 +1,318 @@
+---
+title: "Publication-quality activation tables"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Publication-quality activation tables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  dpi = 96
+)
+```
+
+## Overview
+
+`cluster_table()` is fmrireport's standalone function for building
+publication-quality activation tables from any statistical brain volume.
+It follows COBIDAS reporting guidelines: hierarchical cluster/sub-peak
+structure, world coordinates, p-values, and optional anatomical labeling.
+
+This vignette walks through creating realistic synthetic activations,
+detecting clusters, formatting tables, and adding atlas labels.
+
+## Creating synthetic activation maps
+
+Real fMRI analyses produce `NeuroVol` objects from `fmrireg` or similar
+packages. For demonstration, we'll build a synthetic t-statistic volume
+with Gaussian-shaped activation blobs placed at known locations.
+
+```{r make-synthetic}
+library(fmrireport)
+library(neuroim2)
+
+# Define a brain-like volume in MNI-ish space
+# 2mm isotropic, 91x109x91 grid, origin at (-90, -126, -72)
+sp <- NeuroSpace(c(91, 109, 91),
+                 spacing = c(2, 2, 2),
+                 origin = c(-90, -126, -72))
+
+# Start with Gaussian noise (simulating a t-stat map under the null)
+set.seed(2024)
+arr <- array(rnorm(prod(dim(sp))), dim(sp))
+```
+
+Now add Gaussian-shaped activation blobs. We'll place them at grid
+coordinates and use a smooth falloff to simulate realistic spatial
+extent:
+
+```{r add-blobs}
+# Helper: add a 3D Gaussian blob centered at grid coordinate (cx, cy, cz)
+add_gaussian_blob <- function(arr, cx, cy, cz, peak_value, sigma = 4) {
+  dims <- dim(arr)
+  # Work in a local window for efficiency
+  radius <- ceiling(3 * sigma)
+  x_range <- max(1, cx - radius):min(dims[1], cx + radius)
+  y_range <- max(1, cy - radius):min(dims[2], cy + radius)
+  z_range <- max(1, cz - radius):min(dims[3], cz + radius)
+
+  for (xi in x_range) {
+    for (yi in y_range) {
+      for (zi in z_range) {
+        d2 <- (xi - cx)^2 + (yi - cy)^2 + (zi - cz)^2
+        arr[xi, yi, zi] <- arr[xi, yi, zi] +
+          peak_value * exp(-d2 / (2 * sigma^2))
+      }
+    }
+  }
+  arr
+}
+
+# Blob 1: Left motor cortex (large, strong activation)
+arr <- add_gaussian_blob(arr, cx = 60, cy = 50, cz = 55, peak_value = 8, sigma = 5)
+
+# Blob 2: Right motor cortex (moderate)
+arr <- add_gaussian_blob(arr, cx = 32, cy = 50, cz = 55, peak_value = 6, sigma = 4)
+
+# Blob 3: Supplementary motor area (SMA)
+arr <- add_gaussian_blob(arr, cx = 46, cy = 40, cz = 65, peak_value = 5.5, sigma = 3)
+
+# Blob 4: Left visual cortex (small, strong)
+arr <- add_gaussian_blob(arr, cx = 55, cy = 85, cz = 30, peak_value = 7, sigma = 3)
+
+# Blob 5: Right visual cortex (small, moderate)
+arr <- add_gaussian_blob(arr, cx = 37, cy = 85, cz = 30, peak_value = 5, sigma = 3)
+
+vol <- NeuroVol(arr, sp)
+```
+
+Let's visualize the synthetic activation map:
+
+```{r plot-montage, fig.height = 3.5}
+# Show axial slices at the levels where we placed blobs
+slices <- c(30, 45, 55, 60, 65)
+plot_montage(vol, zlevels = slices, along = 3L,
+             cmap = "inferno", ncol = 5L,
+             title = "Synthetic t-statistic map")
+```
+
+## Basic cluster detection
+
+Detect clusters at t > 3.0 with default settings:
+
+```{r basic-cluster}
+ct <- cluster_table(vol,
+                    threshold = 3.0,
+                    stat_type = "t",
+                    df = 100,
+                    min_cluster_size = 20)
+print(ct)
+```
+
+The output shows:
+
+- **Cluster ID** and **size** (voxels and mm^3)
+- **Peak coordinates** in world space (mm)
+- **Peak statistic** and **p-value**
+- **Sub-peaks** (local maxima) indented below each cluster
+
+## Controlling sub-peak detection
+
+The `local_maxima_dist` parameter sets the minimum distance (mm) between
+reported sub-peaks. A larger value gives fewer, more distinct peaks:
+
+```{r subpeak-dist}
+# Tight distance: many sub-peaks
+ct_tight <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                          local_maxima_dist = 8, max_peaks = 5)
+cat("Sub-peaks with 8mm distance:\n")
+nrow(ct_tight$peaks)
+
+# Wide distance: fewer sub-peaks
+ct_wide <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                         local_maxima_dist = 25, max_peaks = 5)
+cat("Sub-peaks with 25mm distance:\n")
+nrow(ct_wide$peaks)
+```
+
+## Sorting options
+
+By default, clusters are sorted by size (descending). You can sort by
+peak statistic instead:
+
+```{r sort-options}
+ct_by_stat <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                            sort_by = "peak_stat")
+# First cluster has the highest absolute peak stat
+ct_by_stat$clusters[, c("cluster_id", "k", "peak_stat")]
+```
+
+## P-value computation
+
+`cluster_table()` computes voxel-level p-values from the peak statistic
+and degrees of freedom. Different statistic types are supported:
+
+```{r pvalues}
+# t-statistic
+ct_t <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100)
+head(ct_t$clusters[, c("peak_stat", "peak_p")])
+
+# z-statistic (provide df to enable p-value computation)
+ct_z <- cluster_table(vol, threshold = 3.0, stat_type = "z", df = 1)
+head(ct_z$clusters[, c("peak_stat", "peak_p")])
+
+# Without df, p-values are NA
+ct_nodf <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = NULL)
+head(ct_nodf$clusters[, c("peak_stat", "peak_p")])
+```
+
+## Flat data.frame output
+
+`as.data.frame()` produces a table where cluster-level rows have all
+columns populated and sub-peak rows have `NA` for `k` and `Vol_mm3`:
+
+```{r flat-df}
+df <- as.data.frame(ct)
+df
+```
+
+## MNI coordinate column names
+
+When you specify a known coordinate space, column headers adapt:
+
+```{r mni-columns}
+ct_mni <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                        coord_space = "MNI152")
+df_mni <- as.data.frame(ct_mni)
+names(df_mni)
+```
+
+## Formatted tables with tinytable
+
+For inclusion in Quarto/R Markdown reports, `format_cluster_tt()` produces
+a `tinytable` object with an informative caption:
+
+```{r tinytable-output, eval = requireNamespace("tinytable", quietly = TRUE)}
+tt <- format_cluster_tt(ct_mni, max_sub_peaks = 2, digits = 2)
+tt
+```
+
+## Atlas labeling
+
+When you provide an atlas, `cluster_table()` automatically labels each peak
+with anatomical region names, hemisphere, and (for parcellation atlases like
+Schaefer) network assignment.
+
+```{r atlas-label, eval = requireNamespace("neuroatlas", quietly = TRUE)}
+library(neuroatlas)
+
+# Load the Schaefer 200-parcel, 7-network atlas
+atlas <- get_schaefer_atlas(parcels = "200", networks = "7")
+
+ct_labeled <- cluster_table(vol, threshold = 3.0,
+                            stat_type = "t", df = 100,
+                            atlas = atlas,
+                            coord_space = "MNI152")
+print(ct_labeled)
+```
+
+The labeled table now includes region name, hemisphere, and network for
+each peak coordinate:
+
+```{r atlas-df, eval = requireNamespace("neuroatlas", quietly = TRUE)}
+as.data.frame(ct_labeled)
+```
+
+## Combining with overlay plots
+
+You can pair the cluster table with a brain overlay visualization:
+
+```{r overlay-plot, fig.height = 4}
+# Create a thresholded overlay for visualization
+arr_thresh <- as.array(vol)
+arr_thresh[abs(arr_thresh) < 3.0] <- NA
+vol_thresh <- NeuroVol(arr_thresh, sp)
+
+# Create a background volume (uniform gray for this demo)
+bg_arr <- array(1000, dim(sp))
+bg <- NeuroVol(bg_arr, sp)
+
+plot_overlay(bg, vol_thresh,
+             zlevels = c(30, 45, 55, 65),
+             along = 3L,
+             ov_cmap = "inferno",
+             ov_thresh = 0,
+             ncol = 4L,
+             title = "Thresholded activation (t > 3.0)")
+```
+
+## Connectivity options
+
+By default, clusters use 26-connectivity (face, edge, and vertex neighbors).
+You can switch to more conservative connectivity:
+
+```{r connectivity}
+ct_6 <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                      connectivity = "6-connect")
+ct_26 <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 100,
+                       connectivity = "26-connect")
+cat("6-connect clusters:", ct_6$n_clusters, "\n")
+cat("26-connect clusters:", ct_26$n_clusters, "\n")
+```
+
+Stricter connectivity (6-connect) tends to break large clusters into
+smaller pieces.
+
+## Edge cases
+
+The function handles edge cases gracefully:
+
+```{r edge-cases}
+# No suprathreshold voxels
+ct_empty <- cluster_table(vol, threshold = 100)
+ct_empty$n_clusters
+print(ct_empty)
+
+# Very liberal threshold (many small clusters filtered by min_cluster_size)
+ct_liberal <- cluster_table(vol, threshold = 1.5, min_cluster_size = 50)
+cat("Clusters with k >= 50:", ct_liberal$n_clusters, "\n")
+```
+
+## The cluster_table object
+
+A `cluster_table` is an S3 list with these elements:
+
+```{r structure}
+str(ct, max.level = 1)
+```
+
+| Element | Type | Description |
+|---|---|---|
+| `clusters` | data.frame | One row per cluster |
+| `peaks` | data.frame | Sub-peaks with rank within cluster |
+| `threshold` | numeric | Detection threshold used |
+| `stat_type` | character | `"t"`, `"z"`, `"F"`, or `"other"` |
+| `df` | numeric | Degrees of freedom (NULL if not provided) |
+| `n_clusters` | integer | Number of clusters |
+| `coord_space` | character | Coordinate space label |
+| `atlas_name` | character | Atlas name or NA |
+
+## Summary
+
+`cluster_table()` provides a complete pipeline from statistical volume to
+publication-ready activation table:
+1. Cluster detection via `neuroim2::conn_comp()`
+2. Size filtering
+3. World coordinate transformation
+4. Sub-peak (local maxima) identification
+5. Optional atlas labeling via `neuroatlas`
+6. Parametric p-value computation
+
+Output can be printed to the console, converted to a flat data.frame, or
+formatted as a tinytable for direct inclusion in reports.

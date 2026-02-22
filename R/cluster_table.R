@@ -300,10 +300,13 @@ cluster_table <- function(vol, threshold, atlas = NULL,
   if (is.null(atlas_vol)) return(empty)
 
   atlas_space <- neuroim2::space(atlas_vol)
-  atlas_arr <- as.array(atlas_vol)
 
   ## Convert world coords to atlas grid
+  ## coord_to_grid may return a vector for a single coordinate; ensure matrix
   grid <- neuroim2::coord_to_grid(atlas_space, world_coords)
+  if (!is.matrix(grid)) {
+    grid <- matrix(grid, nrow = 1)
+  }
   grid <- round(grid)
 
   ## Get ROI metadata
@@ -312,8 +315,9 @@ cluster_table <- function(vol, threshold, atlas = NULL,
     return(empty)
   }
 
-  ## Look up each coordinate
-  d <- dim(atlas_arr)
+  ## Look up each coordinate using bracket indexing on atlas_vol
+  ## (avoids as.array which fails on ClusteredNeuroVol for large volumes)
+  d <- dim(atlas_vol)
   label <- character(n)
   label_full <- character(n)
   hemi <- character(n)
@@ -333,7 +337,7 @@ cluster_table <- function(vol, threshold, atlas = NULL,
       next
     }
 
-    region_id <- atlas_arr[gi[1], gi[2], gi[3]]
+    region_id <- atlas_vol[gi[1], gi[2], gi[3]]
     if (is.na(region_id) || region_id == 0) {
       label[i] <- NA_character_
       label_full[i] <- NA_character_

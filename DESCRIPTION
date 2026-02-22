@@ -23,7 +23,9 @@ Suggests:
     knitr,
     neuroatlas,
     quarto,
+    rmarkdown,
     testthat (>= 3.0.0),
     tinytable
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 RoxygenNote: 7.3.3
