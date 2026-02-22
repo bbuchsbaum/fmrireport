@@ -105,8 +105,8 @@ as.data.frame.cluster_table <- function(x, row.names = NULL, optional = FALSE,
       Vol_mm3 = cl$volume_mm3,
       Stat = cl$peak_stat,
       p = cl$peak_p,
-      Region = if (is.na(cl$label)) "" else cl$label,
-      Hemi = if (is.na(cl$hemi)) "" else cl$hemi,
+      Region = if (is.na(cl$label)) "--" else cl$label,
+      Hemi = if (is.na(cl$hemi)) "--" else cl$hemi,
       stringsAsFactors = FALSE
     )
     row[[xn]] <- cl$peak_x
@@ -127,8 +127,8 @@ as.data.frame.cluster_table <- function(x, row.names = NULL, optional = FALSE,
           Vol_mm3 = NA_real_,
           Stat = sr$stat,
           p = sr$p,
-          Region = if (is.na(sr$label)) "" else sr$label,
-          Hemi = if (is.na(sr$hemi)) "" else sr$hemi,
+          Region = if (is.na(sr$label)) "--" else sr$label,
+          Hemi = if (is.na(sr$hemi)) "--" else sr$hemi,
           stringsAsFactors = FALSE
         )
         srow[[xn]] <- sr$x
