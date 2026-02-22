@@ -1,5 +1,4 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
     branches: [main, master]
@@ -40,16 +39,29 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Add R-universe repo
-        run: |
-          cat('options(repos = c(bbuchsbaum = "https://bbuchsbaum.r-universe.dev", getOption("repos")))\n',
-              file = "~/.Rprofile", append = TRUE)
+      - name: Install pak
+        run: install.packages("pak", repos = sprintf("https://r-lib.github.io/p/pak/%s/%s/%s/%s", "stable", .Platform$pkgType, R.Version()$os, R.Version()$arch))
         shell: Rscript {0}
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
+      - name: Install dependencies
+        run: |
+          pak::repo_add(bbuchsbaum = "https://bbuchsbaum.r-universe.dev")
+          pak::pkg_install(c(
+            "bbuchsbaum/delarr",
+            "bbuchsbaum/neurosurf",
+            "bbuchsbaum/fmrigds",
+            "bbuchsbaum/fmrilss",
+            "bbuchsbaum/fmristore",
+            "bbuchsbaum/fmridataset",
+            "bbuchsbaum/fmrireg",
+            "bbuchsbaum/neuroim2",
+            "bbuchsbaum/neuroatlas",
+            "bbuchsbaum/fmrihrf",
+            "bbuchsbaum/fmridesign",
+            "any::rcmdcheck",
+            "local::."
+          ), dependencies = TRUE)
+        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:
