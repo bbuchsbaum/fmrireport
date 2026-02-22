@@ -32,3 +32,10 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 RoxygenNote: 7.3.3
+Additional_repositories: https://bbuchsbaum.r-universe.dev
+Remotes:
+    bbuchsbaum/fmrireg,
+    bbuchsbaum/fmridataset,
+    bbuchsbaum/neuroim2,
+    bbuchsbaum/neuroatlas,
+    bbuchsbaum/fmrihrf
