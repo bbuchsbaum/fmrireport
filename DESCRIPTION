@@ -1,0 +1,28 @@
+Package: fmrireport
+Type: Package
+Title: PDF Reporting for fMRI GLM Fits
+Version: 0.1.0
+Authors@R: person("Bradley", "Buchsbaum", , role = c("aut", "cre"), email = "brad.buchsbaum@gmail.com")
+Description: Generates publication-oriented PDF reports for fitted fMRI GLM
+    models from 'fmrireg'. Reports include model/design summaries, HRF plots,
+    coefficient summaries, contrast brain maps, and peak coordinate tables.
+License: GPL (>= 2)
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    fmrireg (>= 0.1.2),
+    fmridataset (>= 0.1.0),
+    neuroim2,
+    stats,
+    tools,
+    utils
+Suggests:
+    fmrihrf,
+    ggplot2,
+    knitr,
+    neuroatlas,
+    quarto,
+    testthat (>= 3.0.0),
+    tinytable
+Config/testthat/edition: 3

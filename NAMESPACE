@@ -1,0 +1,4 @@
+# Generated manually
+
+S3method(report,fmri_lm)
+export(report)
