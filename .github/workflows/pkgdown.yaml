@@ -33,24 +33,28 @@ jobs:
         run: install.packages("pak", repos = sprintf("https://r-lib.github.io/p/pak/%s/%s/%s/%s", "stable", .Platform$pkgType, R.Version()$os, R.Version()$arch))
         shell: Rscript {0}
 
-      - name: Install dependencies
+      - name: Install non-CRAN dependencies (hard deps only)
         run: |
           pak::repo_add(bbuchsbaum = "https://bbuchsbaum.r-universe.dev")
           pak::pkg_install(c(
+            "bbuchsbaum/fmriAR",
             "bbuchsbaum/delarr",
             "bbuchsbaum/neurosurf",
-            "bbuchsbaum/fmrigds",
-            "bbuchsbaum/fmrilss",
-            "bbuchsbaum/fmristore",
-            "bbuchsbaum/fmridataset",
-            "bbuchsbaum/fmrireg",
-            "bbuchsbaum/neuroim2",
-            "bbuchsbaum/neuroatlas",
             "bbuchsbaum/fmrihrf",
             "bbuchsbaum/fmridesign",
-            "any::pkgdown",
-            "local::."
-          ), dependencies = TRUE)
+            "bbuchsbaum/fmrilss",
+            "bbuchsbaum/fmrigds",
+            "bbuchsbaum/neuroim2",
+            "bbuchsbaum/fmridataset",
+            "bbuchsbaum/fmrireg",
+            "bbuchsbaum/neuroatlas"
+          ), dependencies = NA)
+        shell: Rscript {0}
+
+      - name: Install package with suggests
+        run: |
+          pak::repo_add(bbuchsbaum = "https://bbuchsbaum.r-universe.dev")
+          pak::pkg_install(c("any::pkgdown", "local::."), dependencies = TRUE)
         shell: Rscript {0}
 
       - name: Build site

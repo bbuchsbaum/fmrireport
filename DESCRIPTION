@@ -38,10 +38,4 @@ Remotes:
     bbuchsbaum/fmridataset,
     bbuchsbaum/neuroim2,
     bbuchsbaum/neuroatlas,
-    bbuchsbaum/fmrihrf,
-    bbuchsbaum/fmridesign,
-    bbuchsbaum/delarr,
-    bbuchsbaum/neurosurf,
-    bbuchsbaum/fmrigds,
-    bbuchsbaum/fmrilss,
-    bbuchsbaum/fmristore
+    bbuchsbaum/fmrihrf
