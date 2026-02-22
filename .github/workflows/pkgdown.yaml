@@ -31,6 +31,12 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Add R-universe repo
+        run: |
+          cat('options(repos = c(bbuchsbaum = "https://bbuchsbaum.r-universe.dev", getOption("repos")))\n',
+              file = "~/.Rprofile", append = TRUE)
+        shell: Rscript {0}
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pkgdown, local::.
