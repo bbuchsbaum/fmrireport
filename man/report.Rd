@@ -23,6 +23,8 @@ report(x, ...)
   cluster_thresh = 3,
   min_cluster_size = 10L,
   max_peaks = 15L,
+  local_maxima_dist = 15,
+  max_sub_peaks = 3L,
   open = interactive(),
   quiet = TRUE,
   ...
@@ -58,6 +60,10 @@ report(x, ...)
 \item{min_cluster_size}{Minimum cluster size (voxels) in peak table.}
 
 \item{max_peaks}{Maximum peaks per contrast table.}
+
+\item{local_maxima_dist}{Minimum distance (mm) between local maxima within a cluster for sub-peak detection. Default 15.}
+
+\item{max_sub_peaks}{Maximum number of sub-peaks per cluster in the activation table. Default 3.}
 
 \item{open}{If \code{TRUE}, open the generated PDF after rendering.}
 

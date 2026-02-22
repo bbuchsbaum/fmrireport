@@ -19,37 +19,9 @@ report.default <- function(x, ...) {
   )
 }
 
-#' Render a PDF Report for an `fmri_lm` Fit
-#'
-#' Builds a publication-ready PDF report via Quarto (Typst backend). The report
-#' combines model metadata, design diagnostics, HRF curves, estimate summaries,
-#' contrast maps, and peak coordinate tables.
-#'
-#' @param x A fitted `fmri_lm` object.
-#' @param output_file Output PDF path.
-#' @param title Report title.
-#' @param author Optional author string.
-#' @param sections Sections to include. Any subset of:
-#'   `"model"`, `"design"`, `"hrf"`, `"estimates"`, `"contrasts"`, `"diagnostics"`.
-#' @param brain_map_stat Statistic used for contrast maps:
-#'   `"tstat"`, `"estimate"`, or `"prob"`.
-#' @param slice_axis Axis for montage slicing (1, 2, or 3).
-#' @param n_slices Number of slices to render in contrast maps.
-#' @param threshold Optional hard threshold for contrast map rendering. `NULL`
-#'   uses proportional alpha overlays.
-#' @param bg_vol Optional background `NeuroVol` for overlay plots.
-#' @param atlas Optional atlas object for peak labeling. Expected fields:
-#'   `atlas`, `ids`, `labels`.
-#' @param cluster_thresh Absolute statistic threshold used for peak table
-#'   cluster detection.
-#' @param min_cluster_size Minimum cluster size (voxels) in peak table.
-#' @param max_peaks Maximum number of peaks to report per contrast.
-#' @param open If `TRUE`, open the generated PDF after rendering.
-#' @param quiet If `TRUE`, suppress Quarto render logs.
-#' @param ... Reserved for future use.
-#' @return (Invisibly) the output PDF path.
 #' @export
 #' @method report fmri_lm
+#' @noRd
 report.fmri_lm <- function(
     x,
     output_file = "fmri_lm_report.pdf",
@@ -65,6 +37,8 @@ report.fmri_lm <- function(
     cluster_thresh = 3.0,
     min_cluster_size = 10L,
     max_peaks = 15L,
+    local_maxima_dist = 15,
+    max_sub_peaks = 3L,
     open = interactive(),
     quiet = TRUE,
     ...) {
@@ -94,6 +68,8 @@ report.fmri_lm <- function(
     cluster_thresh = cluster_thresh,
     min_cluster_size = as.integer(min_cluster_size),
     max_peaks = as.integer(max_peaks),
+    local_maxima_dist = local_maxima_dist,
+    max_sub_peaks = as.integer(max_sub_peaks),
     fig_dir = fig_dir
   )
 
@@ -322,6 +298,8 @@ report.fmri_lm <- function(
     cluster_thresh,
     min_cluster_size,
     max_peaks,
+    local_maxima_dist = 15,
+    max_sub_peaks = 3L,
     fig_dir) {
   spatial <- .is_spatial_dataset(x$dataset)
 
@@ -360,6 +338,8 @@ report.fmri_lm <- function(
       cluster_thresh = cluster_thresh,
       min_cluster_size = min_cluster_size,
       max_peaks = max_peaks,
+      local_maxima_dist = local_maxima_dist,
+      max_sub_peaks = max_sub_peaks,
       fig_dir = fig_dir
     )
   }
@@ -609,6 +589,8 @@ report.fmri_lm <- function(
     cluster_thresh,
     min_cluster_size,
     max_peaks,
+    local_maxima_dist = 15,
+    max_sub_peaks = 3L,
     fig_dir) {
   ctab <- tryCatch(x$result$contrasts, error = function(e) NULL)
   if (is.null(ctab) || !is.data.frame(ctab) || !nrow(ctab)) {
@@ -646,7 +628,8 @@ report.fmri_lm <- function(
     )
 
     map_file <- ""
-    peak_table <- .empty_peak_table()
+    ct <- NULL
+    peak_table <- data.frame()
     selected_slices <- integer(0)
     vol_for_peaks <- NULL
 
@@ -676,13 +659,17 @@ report.fmri_lm <- function(
     }
 
     if (!is.null(vol_for_peaks)) {
-      peak_table <- .build_peak_table(
-        vol = vol_for_peaks,
+      ct <- cluster_table(
+        vol_for_peaks,
+        threshold = cluster_thresh,
         atlas = atlas,
-        thresh = cluster_thresh,
-        min_size = min_cluster_size,
-        max_peaks = max_peaks
+        stat_type = if (type == "Fcontrast") "F" else "t",
+        df = .extract_residual_df(x),
+        min_cluster_size = min_cluster_size,
+        max_peaks = max_peaks,
+        local_maxima_dist = local_maxima_dist
       )
+      peak_table <- as.data.frame(ct)
     }
 
     items[[i]] <- list(
@@ -691,7 +678,8 @@ report.fmri_lm <- function(
       summary = summary_tbl,
       map_file = map_file,
       slices = selected_slices,
-      peaks = peak_table
+      peaks = peak_table,
+      cluster_table = ct
     )
   }
 
@@ -837,120 +825,6 @@ report.fmri_lm <- function(
   as.integer(head(selected, n))
 }
 
-#' @keywords internal
-#' @noRd
-.build_peak_table <- function(vol, atlas = NULL, thresh = 3.0, min_size = 10L, max_peaks = 15L) {
-  arr <- as.array(vol)
-  if (length(dim(arr)) != 3L) {
-    return(.empty_peak_table())
-  }
-
-  mask <- is.finite(arr) & (abs(arr) >= thresh)
-  if (!any(mask)) {
-    return(.empty_peak_table())
-  }
-
-  comps <- .connected_components_3d(mask)
-  if (!length(comps)) {
-    return(.empty_peak_table())
-  }
-
-  rows <- list()
-  for (cid in seq_along(comps)) {
-    vox <- comps[[cid]]
-    if (length(vox) < min_size) {
-      next
-    }
-
-    vals <- arr[vox]
-    peak_idx <- vox[which.max(abs(vals))]
-    ijk <- arrayInd(peak_idx, dim(arr))[1, ]
-    xyz <- .index_to_xyz(vol, peak_idx, ijk)
-    label <- .atlas_label(atlas, ijk)
-
-    rows[[length(rows) + 1L]] <- data.frame(
-      Cluster = cid,
-      X = xyz[1],
-      Y = xyz[2],
-      Z = xyz[3],
-      Peak_Stat = as.numeric(arr[peak_idx]),
-      Size = length(vox),
-      Label = label,
-      stringsAsFactors = FALSE
-    )
-  }
-
-  if (!length(rows)) {
-    return(.empty_peak_table())
-  }
-
-  out <- do.call(rbind, rows)
-  out <- out[order(abs(out$Peak_Stat), decreasing = TRUE), , drop = FALSE]
-  rownames(out) <- NULL
-  head(out, max_peaks)
-}
-
-#' @keywords internal
-#' @noRd
-.connected_components_3d <- function(mask) {
-  dims <- dim(mask)
-  visited <- array(FALSE, dim = dims)
-  offsets <- as.matrix(expand.grid(-1:1, -1:1, -1:1))
-  offsets <- offsets[rowSums(abs(offsets)) > 0, , drop = FALSE]
-
-  components <- list()
-  starts <- which(mask)
-
-  for (start in starts) {
-    if (visited[start] || !mask[start]) {
-      next
-    }
-
-    queue <- c(start)
-    head <- 1L
-    comp <- integer(0)
-
-    while (head <= length(queue)) {
-      lin <- queue[head]
-      head <- head + 1L
-
-      if (visited[lin]) {
-        next
-      }
-      visited[lin] <- TRUE
-      if (!mask[lin]) {
-        next
-      }
-      comp <- c(comp, lin)
-
-      ijk <- arrayInd(lin, .dim = dims)[1, ]
-      neigh <- sweep(offsets, 2L, ijk, "+")
-      keep <- neigh[, 1] >= 1 & neigh[, 1] <= dims[1] &
-        neigh[, 2] >= 1 & neigh[, 2] <= dims[2] &
-        neigh[, 3] >= 1 & neigh[, 3] <= dims[3]
-
-      if (!any(keep)) {
-        next
-      }
-
-      neigh <- neigh[keep, , drop = FALSE]
-      nlin <- neigh[, 1] +
-        (neigh[, 2] - 1L) * dims[1] +
-        (neigh[, 3] - 1L) * dims[1] * dims[2]
-      nlin <- nlin[mask[nlin] & !visited[nlin]]
-
-      if (length(nlin)) {
-        queue <- c(queue, nlin)
-      }
-    }
-
-    if (length(comp)) {
-      components[[length(components) + 1L]] <- comp
-    }
-  }
-
-  components
-}
 
 #' @keywords internal
 #' @noRd
@@ -1008,75 +882,6 @@ report.fmri_lm <- function(
   }, error = function(e) NULL)
 }
 
-#' @keywords internal
-#' @noRd
-.index_to_xyz <- function(vol, lin_idx, ijk_fallback) {
-  xyz <- tryCatch(neuroim2::index_to_coord(vol, lin_idx), error = function(e) NULL)
-  if (!is.null(xyz) && is.matrix(xyz) && ncol(xyz) >= 3) {
-    return(as.numeric(xyz[1, 1:3]))
-  }
-  as.numeric(ijk_fallback)
-}
-
-#' @keywords internal
-#' @noRd
-.atlas_label <- function(atlas, ijk) {
-  if (is.null(atlas) || !is.list(atlas)) {
-    return(NA_character_)
-  }
-  if (is.null(atlas$atlas)) {
-    return(NA_character_)
-  }
-
-  atlas_arr <- tryCatch({
-    if (inherits(atlas$atlas, c("NeuroVol", "LogicalNeuroVol"))) {
-      as.array(atlas$atlas)
-    } else {
-      as.array(atlas$atlas)
-    }
-  }, error = function(e) NULL)
-
-  if (is.null(atlas_arr) || length(dim(atlas_arr)) != 3L) {
-    return(NA_character_)
-  }
-
-  d <- dim(atlas_arr)
-  if (ijk[1] < 1 || ijk[1] > d[1] || ijk[2] < 1 || ijk[2] > d[2] || ijk[3] < 1 || ijk[3] > d[3]) {
-    return(NA_character_)
-  }
-
-  region_id <- atlas_arr[ijk[1], ijk[2], ijk[3]]
-  if (is.na(region_id) || region_id == 0) {
-    return(NA_character_)
-  }
-
-  ids <- atlas$ids
-  labels <- atlas$labels
-  if (is.null(ids) || is.null(labels)) {
-    return(as.character(region_id))
-  }
-
-  idx <- match(region_id, ids)
-  if (is.na(idx)) {
-    return(as.character(region_id))
-  }
-  as.character(labels[idx])
-}
-
-#' @keywords internal
-#' @noRd
-.empty_peak_table <- function() {
-  data.frame(
-    Cluster = integer(0),
-    X = numeric(0),
-    Y = numeric(0),
-    Z = numeric(0),
-    Peak_Stat = numeric(0),
-    Size = integer(0),
-    Label = character(0),
-    stringsAsFactors = FALSE
-  )
-}
 
 #' @keywords internal
 #' @noRd

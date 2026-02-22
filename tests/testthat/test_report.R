@@ -111,22 +111,21 @@ test_that(".pick_peak_slices identifies high-activation slices", {
   expect_true(any(idx %in% c(6, 10)))
 })
 
-test_that(".build_peak_table returns expected columns", {
+test_that("cluster_table returns expected structure from report context", {
   arr <- array(0, dim = c(10, 10, 10))
   arr[2:4, 2:4, 2:4] <- 4
   arr[7:9, 7:9, 7:9] <- 6
   vol <- neuroim2::NeuroVol(arr, neuroim2::NeuroSpace(dim = dim(arr)))
 
-  tab <- fmrireport:::.build_peak_table(
-    vol = vol,
-    thresh = 3,
-    min_size = 4L,
-    max_peaks = 10L
-  )
+  ct <- cluster_table(vol, threshold = 3, min_cluster_size = 4L)
 
-  expect_true(is.data.frame(tab))
-  expect_true(all(c("Cluster", "X", "Y", "Z", "Peak_Stat", "Size", "Label") %in% names(tab)))
-  expect_true(nrow(tab) >= 1)
+  expect_s3_class(ct, "cluster_table")
+  expect_true(ct$n_clusters >= 1)
+  expect_true(all(c("cluster_id", "k", "peak_stat") %in% names(ct$clusters)))
+
+  df <- as.data.frame(ct)
+  expect_true(is.data.frame(df))
+  expect_true(nrow(df) >= 1)
 })
 
 test_that(".prepare_report_data returns expected structure", {

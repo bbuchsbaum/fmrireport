@@ -155,7 +155,10 @@ if ("contrasts" %in% report_data$sections) {
         if (is.character(item$map_file) && nzchar(item$map_file) && file.exists(item$map_file)) {
           knitr::include_graphics(item$map_file)
         }
-        if (is.data.frame(item$peaks) && nrow(item$peaks)) {
+        if (!is.null(item$cluster_table) && item$cluster_table$n_clusters > 0) {
+          cat("\nActivation Table\n\n")
+          fmrireport::format_cluster_tt(item$cluster_table)
+        } else if (is.data.frame(item$peaks) && nrow(item$peaks)) {
           cat("\nPeak Coordinates\n\n")
           as_tt(item$peaks, digits = 3L)
         } else {
@@ -172,7 +175,9 @@ if ("contrasts" %in% report_data$sections) {
         if (is.character(item$map_file) && nzchar(item$map_file) && file.exists(item$map_file)) {
           knitr::include_graphics(item$map_file)
         }
-        if (is.data.frame(item$peaks) && nrow(item$peaks)) {
+        if (!is.null(item$cluster_table) && item$cluster_table$n_clusters > 0) {
+          fmrireport::format_cluster_tt(item$cluster_table)
+        } else if (is.data.frame(item$peaks) && nrow(item$peaks)) {
           as_tt(item$peaks, digits = 3L)
         }
       }
