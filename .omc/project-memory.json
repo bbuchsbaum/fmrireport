@@ -1,0 +1,177 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1771767938276,
+  "projectRoot": "/Users/bbuchsbaum/code/fmrireport",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "tests"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "R": {
+      "path": "R",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1771767938260,
+      "keyFiles": [
+        "report.R"
+      ]
+    },
+    "inst": {
+      "path": "inst",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1771767938260,
+      "keyFiles": []
+    },
+    "man": {
+      "path": "man",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1771767938260,
+      "keyFiles": [
+        "report.Rd"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1771767938261,
+      "keyFiles": [
+        "testthat.R"
+      ]
+    },
+    "inst/examples": {
+      "path": "inst/examples",
+      "purpose": "Example code",
+      "fileCount": 1,
+      "lastAccessed": 1771767938261,
+      "keyFiles": [
+        "fmri_lm_report_demo.R"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "R/report.R",
+      "accessCount": 20,
+      "lastAccessed": 1771784476395,
+      "type": "file"
+    },
+    {
+      "path": "DESCRIPTION",
+      "accessCount": 17,
+      "lastAccessed": 1771796752804,
+      "type": "file"
+    },
+    {
+      "path": "vignettes/cluster-tables.Rmd",
+      "accessCount": 9,
+      "lastAccessed": 1771789248980,
+      "type": "file"
+    },
+    {
+      "path": "R/cluster_table_format.R",
+      "accessCount": 7,
+      "lastAccessed": 1771789241622,
+      "type": "file"
+    },
+    {
+      "path": "R/cluster_table.R",
+      "accessCount": 7,
+      "lastAccessed": 1771789241934,
+      "type": "file"
+    },
+    {
+      "path": "inst/report/fmri_lm_report.qmd",
+      "accessCount": 6,
+      "lastAccessed": 1771784241581,
+      "type": "file"
+    },
+    {
+      "path": "tests/testthat/test_report.R",
+      "accessCount": 5,
+      "lastAccessed": 1771784300497,
+      "type": "file"
+    },
+    {
+      "path": "NAMESPACE",
+      "accessCount": 5,
+      "lastAccessed": 1771784404259,
+      "type": "file"
+    },
+    {
+      "path": "man/report.Rd",
+      "accessCount": 4,
+      "lastAccessed": 1771784426766,
+      "type": "file"
+    },
+    {
+      "path": "tests/testthat/test_cluster_table.R",
+      "accessCount": 2,
+      "lastAccessed": 1771784341253,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1771795382587,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1771768010445,
+      "type": "directory"
+    },
+    {
+      "path": "inst/examples/fmri_lm_report_demo.R",
+      "accessCount": 1,
+      "lastAccessed": 1771768012999,
+      "type": "file"
+    },
+    {
+      "path": "tests/testthat.R",
+      "accessCount": 1,
+      "lastAccessed": 1771768013349,
+      "type": "file"
+    },
+    {
+      "path": "vignettes/fmrireport.Rmd",
+      "accessCount": 1,
+      "lastAccessed": 1771786684003,
+      "type": "file"
+    },
+    {
+      "path": "_pkgdown.yml",
+      "accessCount": 1,
+      "lastAccessed": 1771795348369,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

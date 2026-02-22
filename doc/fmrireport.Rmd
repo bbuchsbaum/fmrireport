@@ -1,0 +1,168 @@
+---
+title: "Getting started with fmrireport"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with fmrireport}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4,
+  dpi = 96
+)
+```
+
+## Why fmrireport?
+
+After fitting an fMRI GLM with `fmrireg`, you typically need to inspect the
+model specification, visualize contrast maps, and report peak activation
+coordinates. Doing this manually --- extracting coefficient summaries, building
+brain montages, assembling cluster tables --- is tedious and error-prone.
+
+**fmrireport** generates publication-ready PDF reports from a fitted `fmri_lm`
+object in a single function call. It also provides a standalone `cluster_table()`
+function for building COBIDAS-compliant activation tables from any statistical
+brain volume.
+
+## Package overview
+
+The package has two main entry points:
+
+- **`report()`** --- renders a full PDF report (model info, design matrix,
+  HRF shapes, parameter estimates, contrast maps with peak tables, and
+  diagnostics).
+- **`cluster_table()`** --- standalone function that detects suprathreshold
+  clusters, identifies sub-peaks, computes p-values, and optionally labels
+  regions with a brain atlas.
+
+## Quick example: cluster_table()
+
+You don't need a full `fmri_lm` fit to use `cluster_table()`. Any `NeuroVol`
+containing a statistical map will do.
+
+```{r quick-example}
+library(fmrireport)
+library(neuroim2)
+
+# Create a synthetic t-stat volume with two activation clusters
+set.seed(42)
+sp <- NeuroSpace(c(64, 64, 40), spacing = c(3, 3, 3))
+arr <- array(rnorm(64 * 64 * 40), c(64, 64, 40))
+
+# Cluster 1: large blob in left hemisphere
+arr[20:28, 25:33, 15:22] <- arr[20:28, 25:33, 15:22] + 5
+
+# Cluster 2: smaller blob in right hemisphere
+arr[40:46, 30:36, 20:26] <- arr[40:46, 30:36, 20:26] + 4
+
+vol <- NeuroVol(arr, sp)
+```
+
+Now detect clusters and print the result:
+
+```{r cluster-detect}
+ct <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 50)
+print(ct)
+```
+
+The output shows each cluster with its size, world coordinates, peak statistic,
+and p-value. Sub-peaks (local maxima within the same cluster) are indented
+beneath their parent.
+
+## Flat table for rendering
+
+Use `as.data.frame()` to get a flat table suitable for inclusion in documents:
+
+```{r flat-table}
+df <- as.data.frame(ct)
+head(df, 10)
+```
+
+Sub-peak rows have `NA` in the `k` and `Vol_mm3` columns, making it easy to
+distinguish them from cluster-level rows.
+
+## MNI coordinate labels
+
+When you specify a known coordinate space, column names adapt automatically:
+
+```{r mni-coords}
+ct_mni <- cluster_table(vol, threshold = 3.0,
+                        stat_type = "t", df = 50,
+                        coord_space = "MNI152")
+df_mni <- as.data.frame(ct_mni)
+names(df_mni)
+```
+
+## Tinytable output
+
+For Quarto or R Markdown reports, `format_cluster_tt()` produces a formatted
+table with a descriptive caption:
+
+```{r tinytable, eval = requireNamespace("tinytable", quietly = TRUE)}
+format_cluster_tt(ct)
+```
+
+## Full PDF report workflow
+
+If you have a fitted `fmri_lm` object from `fmrireg`, generating a full report
+is a single call:
+
+```{r report-example, eval = FALSE}
+library(fmrireg)
+
+# Fit a model (shown for context; not run here)
+fit <- fmri_lm(
+  onset ~ hrf(condition, contrasts = my_contrasts),
+  block = ~run,
+  dataset = my_dataset
+)
+
+# Generate the report
+report(fit,
+       output_file = "my_analysis.pdf",
+       title = "Visual Localizer Analysis",
+       author = "Jane Doe",
+       cluster_thresh = 3.5,
+       min_cluster_size = 20L,
+       atlas = my_atlas)
+```
+
+The report includes:
+
+| Section | Contents |
+|---|---|
+| **Model** | Formula, dataset class, voxel count, residual df, conditions |
+| **Design** | Design matrix heatmap, regressor correlation plot |
+| **HRF** | Fitted hemodynamic response curves per condition |
+| **Estimates** | Mean/SD/median betas, max t-stat, % significant voxels |
+| **Contrasts** | Brain map montage, hierarchical activation table |
+| **Diagnostics** | AR parameters, residual sigma summary |
+
+You can select which sections to include with the `sections` argument.
+
+## Controlling the activation table
+
+Two new parameters on `report()` control the cluster table:
+
+- `local_maxima_dist` --- minimum distance (mm) between sub-peaks within a
+  cluster (default: 15)
+- `max_sub_peaks` --- maximum sub-peaks reported per cluster (default: 3)
+
+```{r report-params, eval = FALSE}
+report(fit,
+       output_file = "report.pdf",
+       local_maxima_dist = 12,
+       max_sub_peaks = 5)
+```
+
+## Next steps
+
+- `vignette("cluster-tables")` --- in-depth guide to `cluster_table()` with
+  synthetic Gaussian activations and atlas labeling
+- `?cluster_table` --- full parameter reference
+- `?report.fmri_lm` --- all report customization options
