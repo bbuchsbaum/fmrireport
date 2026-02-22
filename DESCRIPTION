@@ -17,11 +17,14 @@ Imports:
     stats,
     tools,
     utils
+URL: https://bbuchsbaum.github.io/fmrireport/, https://github.com/bbuchsbaum/fmrireport
+BugReports: https://github.com/bbuchsbaum/fmrireport/issues
 Suggests:
     fmrihrf,
     ggplot2,
     knitr,
     neuroatlas,
+    pkgdown,
     quarto,
     rmarkdown,
     testthat (>= 3.0.0),

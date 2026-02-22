@@ -1,21 +1,53 @@
 # fmrireport
 
-`fmrireport` generates publication-oriented PDF reports for fitted
-`fmrireg::fmri_lm` models.
+<!-- badges: start -->
+[![pkgdown](https://github.com/bbuchsbaum/fmrireport/actions/workflows/pkgdown.yaml/badge.svg)](https://bbuchsbaum.github.io/fmrireport/)
+[![R-CMD-check](https://github.com/bbuchsbaum/fmrireport/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bbuchsbaum/fmrireport/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
 
-## Example
+`fmrireport` generates publication-oriented PDF reports for fitted
+`fmrireg::fmri_lm` models. It also provides a standalone `cluster_table()`
+function for building COBIDAS-compliant activation tables from any statistical
+brain volume.
+
+## Documentation
+
+Full documentation and vignettes: <https://bbuchsbaum.github.io/fmrireport/>
+
+## Installation
+
+```r
+# install.packages("remotes")
+remotes::install_github("bbuchsbaum/fmrireport")
+```
+
+## Quick example
+
+```r
+library(fmrireport)
+library(neuroim2)
+
+# Create a synthetic t-stat volume
+set.seed(42)
+sp <- NeuroSpace(c(64, 64, 40), spacing = c(3, 3, 3))
+arr <- array(rnorm(64 * 64 * 40), c(64, 64, 40))
+arr[20:28, 25:33, 15:22] <- arr[20:28, 25:33, 15:22] + 5
+
+vol <- NeuroVol(arr, sp)
+ct <- cluster_table(vol, threshold = 3.0, stat_type = "t", df = 50)
+print(ct)
+```
+
+## Full PDF report
 
 ```r
 library(fmrireg)
-library(fmrireport)
 
 # fit <- fmri_lm(...)
-# report(fit, output_file = "fmri_lm_report.pdf")
+# report(fit, output_file = "my_analysis.pdf")
 ```
 
 ## Synthetic demo reports
-
-Run:
 
 ```r
 Rscript inst/examples/fmri_lm_report_demo.R /tmp/fmrireport-report-examples
