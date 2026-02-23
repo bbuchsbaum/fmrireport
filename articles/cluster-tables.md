@@ -282,7 +282,6 @@ tt
 | 4       | NA   | NA      | -2    | -16   | 60    | 6.34 | 0   | --     | --   |
 
 Threshold: t = 3 \| df = 100 \| Space: MNI152
-{#tinytable_yvltcrw2wfvzt2j9chx7}
 
 ## Atlas labeling
 
@@ -294,6 +293,12 @@ and (for parcellation atlases like Schaefer) network assignment.
 ``` r
 library(neuroatlas)
 #> 
+#> Welcome to neuroatlas!
+#> To use TemplateFlow features, you'll need to run:
+#>   neuroatlas::install_templateflow()
+#> This only needs to be done once and will create a persistent environment.
+#> For more info, run: neuroatlas::check_templateflow()
+#> 
 #> Attaching package: 'neuroatlas'
 #> The following object is masked from 'package:neuroim2':
 #> 
@@ -301,6 +306,7 @@ library(neuroatlas)
 
 # Load the Schaefer 200-parcel, 7-network atlas
 atlas <- get_schaefer_atlas(parcels = "200", networks = "7")
+#> downloading: https://raw.githubusercontent.com/ThomasYeoLab/CBIG/master/stable_projects/brain_parcellation/Schaefer2018_LocalGlobal/Parcellations/MNI//freeview_lut/Schaefer2018_200Parcels_7Networks_order.txt
 
 ct_labeled <- cluster_table(vol, threshold = 3.0,
                             stat_type = "t", df = 100,

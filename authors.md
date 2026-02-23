@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/bbuchsbaum/fmrireport/blob/HEAD/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/bbuchsbaum/fmrireport/blob/main/DESCRIPTION)
 
 Buchsbaum B (2026). *fmrireport: PDF Reporting for fMRI GLM Fits*. R
 package version 0.1.0, <https://bbuchsbaum.github.io/fmrireport/>.

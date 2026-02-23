@@ -134,7 +134,6 @@ format_cluster_tt(ct)
 | 2       | NA  | NA      | 135 | 105 | 63  | 6.139 | 0   | --     | --   |
 
 Threshold: t = 3 \| df = 50 \| Space: Unknown
-{#tinytable_j7l2ax78yrxpwif1ns9j}
 
 ## Full PDF report workflow
 
@@ -163,14 +162,14 @@ report(fit,
 
 The report includes:
 
-| Section | Contents |
-|----|----|
-| **Model** | Formula, dataset class, voxel count, residual df, conditions |
-| **Design** | Design matrix heatmap, regressor correlation plot |
-| **HRF** | Fitted hemodynamic response curves per condition |
-| **Estimates** | Mean/SD/median betas, max t-stat, % significant voxels |
-| **Contrasts** | Brain map montage, hierarchical activation table |
-| **Diagnostics** | AR parameters, residual sigma summary |
+| Section         | Contents                                                     |
+|-----------------|--------------------------------------------------------------|
+| **Model**       | Formula, dataset class, voxel count, residual df, conditions |
+| **Design**      | Design matrix heatmap, regressor correlation plot            |
+| **HRF**         | Fitted hemodynamic response curves per condition             |
+| **Estimates**   | Mean/SD/median betas, max t-stat, % significant voxels       |
+| **Contrasts**   | Brain map montage, hierarchical activation table             |
+| **Diagnostics** | AR parameters, residual sigma summary                        |
 
 You can select which sections to include with the `sections` argument.
 
