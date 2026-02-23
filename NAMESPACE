@@ -2,6 +2,7 @@
 
 S3method(as.data.frame,cluster_table)
 S3method(print,cluster_table)
+S3method(report,default)
 S3method(report,fmri_lm)
 export(cluster_table)
 export(format_cluster_tt)

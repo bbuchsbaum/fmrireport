@@ -816,24 +816,20 @@ report.fmri_lm <- function(
   top_idx <- order(sums, decreasing = TRUE)
   top_idx <- top_idx[sums[top_idx] > 0]
 
-  selected <- sort(head(top_idx, n))
+  selected <- sort(utils::head(top_idx, n))
   if (!length(selected) || length(selected) < n) {
     fallback <- unique(round(seq(1L, dim(arr)[along], length.out = n)))
     selected <- sort(unique(c(selected, fallback)))
   }
 
-  as.integer(head(selected, n))
+
+  as.integer(utils::head(selected, n))
 }
 
 
 #' @keywords internal
 #' @noRd
 .extract_event_table <- function(dataset) {
-  et <- tryCatch(fmridataset::event_table(dataset), error = function(e) NULL)
-  if (is.data.frame(et)) {
-    return(et)
-  }
-
   et <- tryCatch(dataset$event_table, error = function(e) NULL)
   if (is.data.frame(et)) {
     return(et)
